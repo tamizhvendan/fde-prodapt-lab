@@ -39,11 +39,11 @@ async def api_company_job_board(slug):
         .all()
      return jobPosts
   
-app.mount("/app", StaticFiles(directory="frontend/dist"))
+app.mount("/assets", StaticFiles(directory="frontend/build/client/assets"))
 
 @app.get("/")
 async def root():
-  indexFilePath = os.path.join("frontend", "dist", "index.html")
+  indexFilePath = os.path.join("frontend", "build", "client", "index.html")
   return FileResponse(path=indexFilePath, media_type="text/html")
 
 @app.get("/{full_path:path}")
