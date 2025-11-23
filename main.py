@@ -6,7 +6,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 from db import get_db_session
+from file_storage import upload_file
 from models import JobBoard, JobPost
+from config import settings
 
 app = FastAPI()
 
@@ -54,9 +56,12 @@ class JobBoardForm(BaseModel):
 
 @app.post("/api/job-boards")
 async def api_create_new_job_board(job_board_form: Annotated[JobBoardForm, Form()]):
-   return {"slug": job_board_form.slug, "file" : job_board_form.logo.filename}
+   logo_contents = await job_board_form.logo.read()
+   file_url = upload_file("company-logos", job_board_form.logo.filename, logo_contents, job_board_form.logo.content_type)
+   return {"slug": job_board_form.slug, "file_url" : file_url}
 
-
+if not settings.PRODUCTION:
+   app.mount("/uploads", StaticFiles(directory="uploads"))
 
 @app.get("/api/job-boards/{job_board_id}/job-posts")
 async def api_company_job_board(job_board_id):
