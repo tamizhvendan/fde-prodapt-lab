@@ -1,4 +1,4 @@
-import type { Route } from "../+types/root";
+import { Link } from "react-router";
 
 export async function clientLoader() {
   const res = await fetch(`/api/job-boards`);
@@ -6,10 +6,15 @@ export async function clientLoader() {
   return {jobBoards}
 }
 
-export default function JobBoards({loaderData } : Route.ComponentProps) {
+export default function JobBoards({loaderData}) {
   return (
     <div>
-      {loaderData.jobBoards.map((jobBoard) => <p>{jobBoard.slug}</p>)}
+      {loaderData.jobBoards.map(
+        (jobBoard) => 
+          <p key={jobBoard.id}>
+            <Link to={`/job-boards/${jobBoard.id}/job-posts`}>{jobBoard.slug}</Link>
+          </p>
+      )}
     </div>
   )
 }

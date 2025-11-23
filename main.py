@@ -1,7 +1,9 @@
 import os
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from typing import Annotated
+from fastapi import FastAPI, File, Form, UploadFile
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 from db import get_db_session
 from models import JobBoard, JobPost
@@ -24,6 +26,38 @@ async def api_job_boards():
        jobBoards = session.query(JobBoard).all()
        return jobBoards
     
+# @app.post("/api/job-boards")
+# async def api_create_new_job_board(request: Request):
+#    body = await request.body()
+#    raw_text = body.decode()
+#    print(request.headers.get('content-type'))
+#    print(raw_text)
+#    return {}
+
+# from typing import Annotated
+# @app.post("/api/job-boards")
+# async def api_create_new_job_board(slug: Annotated[str, Form()]):
+#    return {"slug": slug}
+
+class JobBoardForm(BaseModel):
+   slug : str = Field(..., min_length=3, max_length=20)
+   logo: UploadFile = File(...)
+
+   @field_validator('slug')
+   @classmethod
+   def to_lowercase(cls, v):
+     return v.lower()
+
+# @app.post("/api/job-boards")
+# async def api_create_new_job_board(job_board_form: Annotated[JobBoardForm, Form()]):
+#    return {"slug": job_board_form.slug}
+
+@app.post("/api/job-boards")
+async def api_create_new_job_board(job_board_form: Annotated[JobBoardForm, Form()]):
+   return {"slug": job_board_form.slug, "file" : job_board_form.logo.filename}
+
+
+
 @app.get("/api/job-boards/{job_board_id}/job-posts")
 async def api_company_job_board(job_board_id):
   with get_db_session() as session:
