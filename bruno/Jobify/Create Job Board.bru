@@ -1,0 +1,15 @@
+meta {
+  name: Create Job Board
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{BASE_URL}}/api/job-boards
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

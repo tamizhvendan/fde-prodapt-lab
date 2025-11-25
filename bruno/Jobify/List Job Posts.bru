@@ -1,0 +1,15 @@
+meta {
+  name: List Job Posts
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{BASE_URL}}/api/job-boards/1/job-posts
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
