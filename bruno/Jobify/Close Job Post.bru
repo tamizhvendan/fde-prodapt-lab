@@ -1,0 +1,16 @@
+meta {
+  name: Close Job Post
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{BASE_URL}}/api/job-posts/1/close
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -6,10 +6,16 @@ meta {
 
 post {
   url: {{BASE_URL}}/api/job-boards
-  body: none
+  body: multipartForm
   auth: inherit
+}
+
+body:multipart-form {
+  slug: meta
+  logo: @file(/Users/tamizhvendans/Downloads/Meta-Logo.png)
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

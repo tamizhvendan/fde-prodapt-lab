@@ -1,13 +1,13 @@
 import os
 from typing import Annotated
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import text
 from db import get_db_session
 from file_storage import upload_file
-from models import JobBoard, JobPost
+from models import JobApplication, JobBoard, JobPost
 from config import settings
 
 app = FastAPI()
@@ -66,6 +66,17 @@ async def api_company_job_board(job_board_id):
      jobPosts = session.query(JobPost).filter(JobPost.job_board_id.__eq__(job_board_id)).all()
      return jobPosts
 
+@app.post("/api/job-posts/{job_post_id}/close")
+async def api_close_job_post(job_post_id):
+  with get_db_session() as session:
+     jobPost = session.get(JobPost, job_post_id)
+     if not jobPost:
+        raise HTTPException(status_code=404)
+     jobPost.is_open = False
+     session.add(jobPost)
+     session.commit()
+     return jobPost
+
 @app.get("/api/job-boards/{slug}")
 async def api_company_job_board(slug):
   with get_db_session() as session:
@@ -74,6 +85,34 @@ async def api_company_job_board(slug):
         .filter(JobBoard.slug.__eq__(slug)) \
         .all()
      return jobPosts
+  
+
+class JobApplicationForm(BaseModel):
+   first_name : str = Field(..., min_length=3, max_length=20)
+   last_name : str = Field(..., min_length=3, max_length=20)
+   email : EmailStr
+   job_post_id : int
+   resume: UploadFile = File(...)
+
+@app.post("/api/job-applications")
+async def api_create_new_job_application(job_application_form: Annotated[JobApplicationForm, Form()]):
+   with get_db_session() as session:
+      jobPost = session.get(JobPost, job_application_form.job_post_id)
+      if not jobPost or not jobPost.is_open:
+         raise HTTPException(status_code=400)
+   resume_contents = await job_application_form.resume.read()
+   file_url = upload_file("resumes", job_application_form.resume.filename, resume_contents, job_application_form.resume.content_type)
+   with get_db_session() as session:
+      new_job_application = JobApplication(
+         first_name=job_application_form.first_name, 
+         last_name=job_application_form.last_name, 
+         email=job_application_form.email, 
+         job_post_id = job_application_form.job_post_id,
+         resume_url=file_url)
+      session.add(new_job_application)
+      session.commit()
+      session.refresh(new_job_application)
+      return new_job_application
   
 app.mount("/assets", StaticFiles(directory="frontend/build/client/assets"))
 

@@ -1,0 +1,24 @@
+meta {
+  name: Create Job Application
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{BASE_URL}}/api/job-applications
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  first_name: John
+  last_name: Doe
+  job_post_id: 1
+  email: john@doe.com
+  resume: @file(/Users/tamizhvendans/Downloads/md-to-pdf (21).pdf)
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
