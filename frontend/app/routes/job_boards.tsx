@@ -3,37 +3,42 @@ import { Avatar, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import type { Route } from "../+types/root";
+import {userContext} from "../context"
 
-export async function clientLoader() {
+export async function clientLoader({context, request}) {
+  const me = context.get(userContext)
+  const isAdmin = me && me.is_admin
   const res = await fetch(`/api/job-boards`);
   const jobBoards = await res.json();
-  return {jobBoards}
+  return {jobBoards, isAdmin}
 }
 
-export async function clientAction({ request}: Route.ClientActionArgs) {
+export async function clientAction({request}: Route.ClientActionArgs) {
   const formData = await request.formData()
   const jobBoardId = formData.get('job_board_id')
   await fetch(`/api/job-boards/${jobBoardId}`, {
     method: 'DELETE',
   })
-} 
+}
 
-export default function JobBoards({loaderData}) {
+export default function JobBoards({loaderData} : Route.ComponentProps) {
   const fetcher = useFetcher();
 
   return (
     <div>
-      <div className="float-right">
-        <Button>
-          <Link to="/job-boards/new">Add New Job Board</Link>
-        </Button>
-      </div>
+      {loaderData.isAdmin
+        ? <div className="float-right">
+            <Button>
+              <Link to="/job-boards/new">Add New Job Board</Link>
+            </Button>
+          </div>
+        : <></>}
       <Table className="mt-4">
         <TableHeader>
           <TableRow>
             <TableHead>Logo</TableHead>
             <TableHead>Slug</TableHead>
-            <TableHead></TableHead>
+            {loaderData.isAdmin ? <TableHead></TableHead> : <></>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -46,7 +51,7 @@ export default function JobBoards({loaderData}) {
                   : <></>}
                 </TableCell>
                 <TableCell><Link to={`/job-boards/${jobBoard.id}/job-posts`} className="capitalize">{jobBoard.slug}</Link></TableCell>
-                <TableCell className="flex space-x-2">
+                {loaderData.isAdmin ? <TableCell className="flex space-x-2">
                   <Link to={`/job-boards/${jobBoard.id}/edit`}>Edit</Link>
                   <fetcher.Form method="post" 
                     onSubmit={(event) => {
@@ -61,6 +66,7 @@ export default function JobBoards({loaderData}) {
                     <button>Delete</button>
                   </fetcher.Form>
                 </TableCell>
+                : <></>}
               </TableRow>
           )}
         </TableBody>

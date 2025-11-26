@@ -3,6 +3,14 @@ import type { Route } from "../+types/root";
 import { Field, FieldGroup, FieldLabel, FieldLegend } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { userContext } from "~/context";
+
+export async function clientLoader({context}) {
+  const me = context.get(userContext)
+  if (!me || !me.is_admin) {
+    return redirect("/admin-login")
+  }
+}
 
 export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData()

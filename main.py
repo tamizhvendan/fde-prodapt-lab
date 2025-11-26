@@ -5,14 +5,15 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import text
-from auth import AdminAuthMiddleware, authenticate_admin
+from auth import AdminAuthzMiddleware, AdminSessionMiddleware, authenticate_admin
 from db import get_db_session
 from file_storage import upload_file
 from models import JobApplication, JobBoard, JobPost
 from config import settings
 
 app = FastAPI()
-app.add_middleware(AdminAuthMiddleware)
+app.add_middleware(AdminAuthzMiddleware)
+app.add_middleware(AdminSessionMiddleware)
 
 
 @app.get("/api/health")
@@ -28,7 +29,7 @@ async def health():
 
 @app.get("/api/me")
 async def me(req: Request):
-   return {"is_admin": hasattr(req.state, "is_admin")}
+   return {"is_admin": req.state.is_admin}
 
 @app.get("/api/job-boards")
 async def api_job_boards():
@@ -103,7 +104,7 @@ async def api_get_company_job_board(job_board_id, job_board_edit_form: Annotated
      if not jobBoard:
         raise HTTPException(status_code=404)
      jobBoard.slug = job_board_edit_form.slug
-     if job_board_edit_form.logo is not None:
+     if job_board_edit_form.logo is not None and job_board_edit_form.logo.filename != '':
         logo_contents = await job_board_edit_form.logo.read()
         file_url = upload_file("company-logos", job_board_edit_form.logo.filename, logo_contents, job_board_edit_form.logo.content_type)
         jobBoard.logo_url = file_url
@@ -176,7 +177,10 @@ async def admin_login(response: Response, admin_login_form: Annotated[AdminLogin
    auth_response = authenticate_admin(admin_login_form.username, admin_login_form.password)
    if auth_response is not None:
       secure = settings.PRODUCTION
-      response.set_cookie(key="admin_session", value=auth_response, httponly=True, secure=secure, samesite="Lax")
-      return {}
+      response.set_cookie(key="admin_session", 
+                          value=auth_response, 
+                          httponly=True, secure=secure, 
+                          samesite="Lax")
+      return {"is_admin": True}
    else:
       raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)

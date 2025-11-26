@@ -3,15 +3,20 @@ import type { Route } from "../+types/root";
 import { Field, FieldGroup, FieldLabel, FieldLegend } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { userContext } from "~/context";
 
-export async function clientLoader({ params }: Route.ClientLoaderArgs) {
+export async function clientLoader({ params, context }: Route.ClientLoaderArgs) {
+  const me = context.get(userContext)
+  debugger
+  if (!me || !me.is_admin) {
+    return redirect("/admin-login")
+  }
   const response = await fetch(`/api/job-boards/${params.jobBoardId}`)
   const jobBoard = await response.json()
   return {jobBoard} 
 } 
 
 export async function clientAction({ request, params }: Route.ClientActionArgs) {
-  debugger
   const formData = await request.formData()
   await fetch(`/api/job-boards/${params.jobBoardId}`, {
     method: 'PUT',
