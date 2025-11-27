@@ -14,8 +14,8 @@ from config import settings
 
 def test_create_job_board(client, monkeypatch):
     monkeypatch.setattr(settings, "ADMIN_USERNAME", "admin")
-    monkeypatch.setattr(settings, "ADMIN_PASSWORD", "secret")
-    login_data = {"username": "admin", "password": "secret"}
+    monkeypatch.setattr(settings, "ADMIN_PASSWORD", "test")
+    login_data = {"username": "admin", "password": "test"}
     login_response = client.post("/api/admin-login", data=login_data)
     assert login_response.status_code == 200
 

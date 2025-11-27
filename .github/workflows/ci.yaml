@@ -11,6 +11,15 @@
     jobs:
       test:
         runs-on: ubuntu-latest
+        env:
+          DATABASE_URL: "http://www.example.com"
+          PRODUCTION: "false"
+          SUPABASE_URL: "http://www.example.com"
+          SUPABASE_KEY: "test"
+          ADMIN_USERNAME: "admin"
+          ADMIN_PASSWORD: "test"
+          RESEND_API_KEY: "test"
+          OPENAI_API_KEY: "test"
         steps:
         - name: Checkout code
           uses: actions/checkout@v4
