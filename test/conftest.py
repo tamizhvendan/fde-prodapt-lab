@@ -8,7 +8,7 @@ from main import app, get_db
 
 @pytest.fixture(scope="session")
 def postgres_container():
-    with PostgresContainer("postgres:16-alpine") as container:
+    with PostgresContainer("postgres:16-alpine", dbname="test_db") as container:
         yield container
 
 @pytest.fixture(scope="session")
@@ -21,15 +21,17 @@ def db_engine(postgres_container):
 @pytest.fixture(scope="function")
 def db_session(db_engine):
     connection = db_engine.connect()
-    transaction = connection.begin()
     SessionLocal = sessionmaker(bind=connection)
     session = SessionLocal()
+    transaction = connection.begin()
     
-    yield session
-    
-    session.close()
-    transaction.rollback()
-    connection.close()
+    try:
+        yield session
+    finally:
+        if transaction.is_active:
+                transaction.rollback()
+        session.close()
+        connection.close()
 
 @pytest.fixture(scope="function")
 def client(db_session):
@@ -38,7 +40,8 @@ def client(db_session):
     
     app.dependency_overrides[get_db] = override_get_db
     
-    with TestClient(app) as test_client:
-        yield test_client
-
-    app.dependency_overrides.clear()
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        app.dependency_overrides.clear()

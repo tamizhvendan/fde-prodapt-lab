@@ -36,8 +36,9 @@ async def me(req: Request):
 
 @app.get("/api/job-boards")
 async def api_job_boards(db: Session = Depends(get_db)):
-   jobBoards = db.query(JobBoard).all()
-   return jobBoards
+    with get_db_session() as session:
+      jobBoards = db.query(JobBoard).all()
+      return jobBoards
 
 @app.get("/api/job-application-ai-evaluations")
 async def api_job_boards():
@@ -50,15 +51,14 @@ class JobBoardForm(BaseModel):
    logo: UploadFile = File(...)
 
 @app.post("/api/job-boards")
-async def api_create_new_job_board(job_board_form: Annotated[JobBoardForm, Form()]):
+async def api_create_new_job_board(job_board_form: Annotated[JobBoardForm, Form()], db: Session = Depends(get_db)):
    logo_contents = await job_board_form.logo.read()
    file_url = upload_file("company-logos", job_board_form.logo.filename, logo_contents, job_board_form.logo.content_type)
-   with get_db_session() as session:
-      new_job_board = JobBoard(slug=job_board_form.slug, logo_url=file_url)
-      session.add(new_job_board)
-      session.commit()
-      session.refresh(new_job_board)
-      return new_job_board
+   new_job_board = JobBoard(slug=job_board_form.slug, logo_url=file_url)
+   db.add(new_job_board)
+   db.commit()
+   db.refresh(new_job_board)
+   return new_job_board
 
 if not settings.PRODUCTION:
    app.mount("/uploads", StaticFiles(directory="uploads"))
@@ -209,7 +209,7 @@ async def admin_login(response: Response, admin_login_form: Annotated[AdminLogin
    auth_response = authenticate_admin(admin_login_form.username, admin_login_form.password)
    if auth_response is not None:
       secure = settings.PRODUCTION
-      
+
       response.set_cookie(key="admin_session", 
                           value=auth_response, 
                           httponly=True, secure=secure, 
